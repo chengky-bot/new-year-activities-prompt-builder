@@ -99,9 +99,33 @@
             font-weight: bold;
             border: 1px solid #fecaca;
         }
+        
+        /* 確保文字能正常換行，修復文字變成直排的錯誤 */
+        #display-text-container {
+            word-wrap: break-word;
+            white-space: normal;
+        }
+        
+        /* 偏好設定：動態字體大小變數與覆寫 */
+        :root {
+            --fs-multiplier: 1.125; /* 預設 18px (18/16 = 1.125) */
+        }
+        body { font-size: calc(1rem * var(--fs-multiplier)); }
+        .text-xs { font-size: calc(0.75rem * var(--fs-multiplier)) !important; line-height: 1.2 !important; }
+        .text-sm { font-size: calc(0.875rem * var(--fs-multiplier)) !important; line-height: 1.25 !important; }
+        .text-base { font-size: calc(1rem * var(--fs-multiplier)) !important; line-height: 1.5 !important; }
+        .text-lg { font-size: calc(1.125rem * var(--fs-multiplier)) !important; line-height: 1.5 !important; }
+        .text-xl { font-size: calc(1.25rem * var(--fs-multiplier)) !important; line-height: 1.5 !important; }
+        .text-2xl { font-size: calc(1.5rem * var(--fs-multiplier)) !important; line-height: 1.2 !important; }
+        .text-3xl { font-size: calc(1.875rem * var(--fs-multiplier)) !important; line-height: 1.2 !important; }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- 偏好設定按鈕 -->
+    <button id="btn-settings" class="fixed top-4 right-4 bg-blue-600 text-white w-12 h-12 rounded shadow-lg flex items-center justify-center text-2xl z-40 hover:bg-blue-700 transition-colors">
+        <i class="fa-solid fa-sliders"></i>
+    </button>
 
     <div class="max-w-4xl w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-[6px] border-red-600 flex flex-col min-h-[750px] relative text-sm sm:text-base">
         <!-- Header -->
@@ -122,26 +146,31 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="group-style"></div>
                 </div>
 
-                <!-- 1. Single Character Selection -->
+                <!-- 1. Single Character Creation -->
                 <div class="step-content" data-step="1">
                     <div class="text-center mb-8">
-                        <h2 class="text-2xl font-bold text-red-700 mb-2">2. 設定角色組合</h2>
-                        <p class="text-gray-500 text-sm">請選擇一位角色及其特徵</p>
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">2. 設計單一角色</h2>
+                        <p class="text-gray-500 text-sm">請為這位角色搭配特徵和服裝</p>
                     </div>
                     
-                    <div class="mb-8">
-                        <h3 class="section-title text-lg font-bold text-gray-800 mb-4">角色類型 (Who) - 單選</h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="group-character"></div>
+                    <div class="mb-8 bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                        <h3 class="section-title text-lg font-bold text-gray-800 mb-4">第一步：選角色 (Who) - 單選</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="group-character"></div>
                     </div>
 
-                    <div>
-                        <h3 class="section-title text-lg font-bold text-gray-800 mb-4">外貌與特徵 (Description) - 可多選</h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="group-adjective"></div>
+                    <div class="mb-8 bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                        <h3 class="section-title text-lg font-bold text-gray-800 mb-4">第二步：外貌與特徵 (Description) - 可多選</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="group-adjective"></div>
                     </div>
 
-                    <div class="mt-8 text-center">
-                        <button id="btn-add-char" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-10 rounded-2xl shadow-lg inline-flex items-center gap-2 transform active:scale-95 transition-all">
-                            確認此角色並繼續 <i class="fa-solid fa-plus"></i>
+                    <div class="mb-8 bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                        <h3 class="section-title text-lg font-bold text-gray-800 mb-4">第三步：換上賀年新衣 (Clothing) - 可多選</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="group-clothing"></div>
+                    </div>
+
+                    <div class="mt-8 text-center sticky bottom-4">
+                        <button id="btn-add-char" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-10 rounded-2xl shadow-lg inline-flex items-center gap-2 transform active:scale-95 transition-all text-lg">
+                            完成設計此角色並加入 <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
                 </div>
@@ -153,64 +182,55 @@
                         <p class="text-gray-500 text-sm">目前畫面中的角色有：</p>
                     </div>
                     
-                    <div id="character-list-display" class="flex flex-wrap justify-center gap-4 mb-10"></div>
+                    <div id="character-list-display" class="flex flex-wrap justify-center gap-4 mb-10 min-h-[100px] items-center"></div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-lg mx-auto">
                         <button onclick="goToStep(1)" class="bg-orange-50 hover:bg-orange-100 text-orange-600 border-4 border-orange-200 font-bold py-6 rounded-[2rem] flex flex-col items-center gap-2 transition-all">
                             <span class="text-3xl">➕</span>
-                            <span>增加其他角色 / 家人</span>
+                            <span>設計並加入另一位家人</span>
                         </button>
                         <button onclick="goToStep(3)" class="bg-green-50 hover:bg-green-100 text-green-600 border-4 border-green-200 font-bold py-6 rounded-[2rem] flex flex-col items-center gap-2 transition-all">
                             <span class="text-3xl">➡️</span>
-                            <span>下一步：選衣服</span>
+                            <span>角色齊了！下一步：設定地點</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- 3. Clothing -->
+                <!-- 3. Location -->
                 <div class="step-content" data-step="3">
                     <div class="text-center mb-8">
-                        <h2 class="text-2xl font-bold text-red-700 mb-2">4. 換上賀年新衣</h2>
-                        <p class="text-gray-500 text-sm">角色們穿什麼？（可多選）</p>
-                    </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" id="group-clothing"></div>
-                </div>
-
-                <!-- 4. Location -->
-                <div class="step-content" data-step="4">
-                    <div class="text-center mb-8">
-                        <h2 class="text-2xl font-bold text-red-700 mb-2">5. 設定場景地點</h2>
-                        <p class="text-gray-500 text-sm italic">在哪裡過年呢？</p>
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">4. 設定場景地點</h2>
+                        <p class="text-gray-500 text-sm italic">大家在哪裡過年呢？</p>
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="group-location"></div>
                 </div>
 
-                <!-- 5. Action -->
-                <div class="step-content" data-step="5">
+                <!-- 4. Action -->
+                <div class="step-content" data-step="4">
                     <div class="text-center mb-8">
-                        <h2 class="text-2xl font-bold text-red-700 mb-2">6. 港式新年活動</h2>
-                        <p class="text-gray-500 text-sm italic">大家正在忙什麼？</p>
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">5. 港式新年活動</h2>
+                        <p class="text-gray-500 text-sm italic">他們正在忙什麼？</p>
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="group-action"></div>
                 </div>
 
-                <!-- 6. Decorations -->
-                <div class="step-content" data-step="6">
+                <!-- 5. Decorations -->
+                <div class="step-content" data-step="5">
                     <div class="text-center mb-8">
-                        <h2 class="text-2xl font-bold text-red-700 mb-2">7. 賀年裝飾與美食</h2>
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">6. 賀年裝飾與美食</h2>
                         <p class="text-gray-500 text-sm">增加節日氣氛的小物件（多選）</p>
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" id="group-deco"></div>
                 </div>
 
-                <!-- Final Preview Page -->
-                <div class="step-content" data-step="7">
+                <!-- 6. Final Preview Page -->
+                <div class="step-content" data-step="6">
                     <div class="text-center mb-6">
                         <h2 class="text-3xl font-bold text-red-700 mb-2">✨ 提詞生成完成 ✨</h2>
                         <p class="text-gray-500">複製下方指令到 AI 繪圖工具中：</p>
                     </div>
-                    <div class="bg-red-50 p-6 rounded-[2rem] border-4 border-red-100 mb-8 shadow-inner">
-                        <div id="display-text" class="text-lg text-gray-800 leading-relaxed italic text-center min-h-[120px] flex items-center justify-center"></div>
+                    <div class="bg-red-50 p-6 rounded-[2rem] border-4 border-red-100 mb-8 shadow-inner" id="display-text-container">
+                        <p id="display-text" class="text-lg text-gray-800 leading-loose italic text-center min-h-[120px] block"></p>
                     </div>
                     <div class="flex flex-col gap-4 max-w-sm mx-auto">
                         <button id="btn-listen" class="bg-white hover:bg-orange-50 text-orange-600 border-2 border-orange-500 font-bold py-3 rounded-2xl transition-all flex items-center justify-center gap-2">
@@ -218,6 +238,9 @@
                         </button>
                         <button id="btn-copy" class="bg-red-600 hover:bg-red-700 text-white font-bold py-5 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-xl text-xl">
                             <i class="fa-solid fa-copy"></i> 複製 AI 提詞 (Prompt)
+                        </button>
+                        <button id="btn-download" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-xl text-lg mt-2">
+                            ⬇️ 下載為 TXT 檔
                         </button>
                     </div>
                 </div>
@@ -261,6 +284,45 @@
         </div>
     </div>
 
+    <!-- 偏好設定側邊欄 -->
+    <div id="settings-overlay" class="fixed inset-0 bg-black/40 z-[50] hidden opacity-0 transition-opacity duration-300"></div>
+    <div id="settings-panel" class="fixed top-0 right-0 h-full w-80 sm:w-96 bg-white shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-5 bg-blue-600 text-white flex justify-between items-center shadow-md">
+            <h2 class="text-xl font-bold"><i class="fa-solid fa-gear"></i> 偏好設定</h2>
+            <button id="btn-close-settings" class="text-white hover:text-gray-200 text-3xl leading-none">&times;</button>
+        </div>
+        <div class="p-6 flex flex-col gap-10 flex-grow overflow-y-auto">
+            <!-- 字體大小 -->
+            <div>
+                <label class="font-bold text-gray-700 mb-4 block border-b pb-2">字體大小 <span id="fs-display" class="text-blue-600 text-sm ml-2">18px</span></label>
+                <input type="range" id="fs-slider" min="0" max="5" value="2" class="w-full accent-blue-600">
+                <div class="flex justify-between text-[10px] sm:text-xs text-gray-500 mt-3 font-medium px-1">
+                    <span class="text-center leading-tight">小小的<br>(14px)</span>
+                    <span class="text-center leading-tight">小一點<br>(16px)</span>
+                    <span class="text-center leading-tight">剛剛好<br>(18px)</span>
+                    <span class="text-center leading-tight">大一點<br>(22px)</span>
+                    <span class="text-center leading-tight">大大的<br>(26px)</span>
+                    <span class="text-center leading-tight">超～大<br>(32px)</span>
+                </div>
+            </div>
+            <!-- 說話速度 -->
+            <div>
+                <label class="font-bold text-gray-700 mb-4 block border-b pb-2">說話速度 <span id="rate-display" class="text-blue-600 text-sm ml-2">1.0x</span></label>
+                <div class="flex items-center gap-3">
+                    <div class="flex flex-col items-center">
+                        <span class="text-2xl" title="慢慢說">🐢</span>
+                        <span class="text-xs text-gray-500 whitespace-nowrap mt-1">慢慢說</span>
+                    </div>
+                    <input type="range" id="rate-slider" min="0" max="5" value="5" class="w-full accent-blue-600 flex-grow">
+                    <div class="flex flex-col items-center">
+                        <span class="text-2xl" title="快快說">🐇</span>
+                        <span class="text-xs text-gray-500 whitespace-nowrap mt-1">快快說</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const categories = {
             style: { items: [
@@ -274,19 +336,19 @@
                 { name: "精緻剪紙藝術", emoji: "✂️", en: "Traditional Chinese paper cutting art style, intricate" }
             ]},
             character: { items: [
-                { name: "小學男生", emoji: "👦", en: "Hong Kong primary school boy" },
-                { name: "小學女生", emoji: "👧", en: "Hong Kong primary school girl" },
-                { name: "親切奶奶", emoji: "👵", en: "grandmother with grey hair" },
-                { name: "和藹爺爺", emoji: "👴", en: "grandfather" },
-                { name: "香港媽咪", emoji: "👩", en: "Hong Kong mother" },
-                { name: "香港嗲哋", emoji: "👨", en: "Hong Kong father" },
+                { name: "活潑小六男生", emoji: "👦", en: "energetic Hong Kong primary school boy" },
+                { name: "文靜小六女生", emoji: "👧", en: "quiet Hong Kong primary school girl" },
+                { name: "親切奶奶", emoji: "👵", en: "kind grandmother with grey hair" },
+                { name: "和藹爺爺", emoji: "👴", en: "friendly grandfather" },
+                { name: "媽媽", emoji: "👩", en: "mother" },
+                { name: "時髦帥氣爸爸", emoji: "👨", en: "stylish handsome father" },
                 { name: "學校老師", emoji: "👩‍🏫", en: "friendly school teacher" },
-                { name: "慈祥校長", emoji: "👨‍💼", en: "friendly school principal" },
                 { name: "財神爺", emoji: "💰", en: "God of Wealth in traditional costume" },
-                { name: "中學表哥", emoji: "🧑‍🎓", en: "teenage high school cousin" },
-                { name: "可愛柴犬", emoji: "🐕", en: "Shiba Inu" },
-                { name: "肥嘟嘟貓咪", emoji: "🐈", en: "chubby cute cat" },
-                { name: "幼稚園表弟", emoji: "🧒", en: "kindergarten toddler cousin" }
+                { name: "表哥", emoji: "🧑‍🎓", en: "older male cousin" },
+                { name: "表姊", emoji: "👱‍♀️", en: "older female cousin" },
+                { name: "小表弟妹", emoji: "🧒", en: "younger cousins" },
+                { name: "可愛柴犬", emoji: "🐕", en: "cute Shiba Inu" },
+                { name: "貓咪", emoji: "🐈", en: "cute cat" }
             ]},
             adjective: { items: [
                 { name: "戴智能手錶", emoji: "⌚", en: "wearing a kids smart watch" },
@@ -295,16 +357,13 @@
                 { name: "笑到見牙唔見眼", emoji: "😆", en: "smiling brightly with closed eyes" },
                 { name: "戴著黑框眼鏡", emoji: "👓", en: "wearing black-rimmed glasses" },
                 { name: "紮起雙馬尾", emoji: "👧", en: "with cute pigtails" },
-                { name: "調皮搗蛋", emoji: "🤪", en: "mischievous" },
+                { name: "精靈活潑", emoji: "🌟", en: "smart and energetic" }, // 替換了負面的調皮搗蛋
                 { name: "肥嘟嘟", emoji: "🥟", en: "chubby and cute" },
-                { name: "缺了一隻門牙", emoji: "🦷", en: "missing a front tooth, cute smile" },
                 { name: "戴著紅色冷帽", emoji: "🧢", en: "wearing a red winter beanie" },
                 { name: "戴馬年頭飾", emoji: "🐴", en: "wearing a horse-themed Lunar New Year headband" },
                 { name: "害羞靦腆", emoji: "😳", en: "shy" }
             ]},
             clothing: { items: [
-                { name: "校服配紅校褸", emoji: "🧥", en: "wearing a school uniform with a festive red school jacket" },
-                { name: "學校運動服", emoji: "🏃", en: "wearing a primary school PE uniform" },
                 { name: "鮮紅連帽衛衣", emoji: "👕", en: "wearing a thick red hoodie" },
                 { name: "卡通圖案衛衣", emoji: "🧸", en: "wearing a hoodie with cute cartoon prints" },
                 { name: "中式長衫唐裝", emoji: "🥋", en: "wearing a traditional Tang suit" },
@@ -320,15 +379,16 @@
                 { name: "熱鬧的中式酒樓", emoji: "🥟", en: "inside a bustling traditional Chinese Dim Sum restaurant" },
                 { name: "傳統港式茶餐廳", emoji: "☕", en: "inside a retro Hong Kong Cha Chaan Teng" },
                 { name: "摩天輪海旁", emoji: "🎡", en: "at Central Waterfront with the observation wheel" },
-                { name: "校園賀年大會", emoji: "🏫", en: "at a Hong Kong primary school decorated for Lunar New Year" },
-                { name: "擺滿年花的客廳", emoji: "🏠", en: "in a living room filled with peach blossoms and orchids" },
+                { name: "學校", emoji: "🏫", en: "at school decorated for Lunar New Year" },
+                { name: "擺滿年花的客廳", emoji: "🏠", en: "in a cozy living room filled with peach blossoms and orchids" },
                 { name: "屋邨長廊佈置", emoji: "🏢", en: "at a public housing estate corridor with red lanterns" },
                 { name: "尖沙咀鐘樓海旁", emoji: "🗼", en: "at Tsim Sha Tsui waterfront near the Clock Tower" }
             ]},
             action: { items: [
-                { name: "在玄關換紅拖鞋", emoji: "👡", en: "changing into festive red slippers at the foyer" },
+                { name: "全家人一齊食團年飯", emoji: "🍚", en: "whole family eating reunion dinner together happily" }, // 新增
+                { name: "欣賞璀璨的賀歲煙花", emoji: "🎆", en: "watching brilliant Lunar New Year fireworks display" }, // 新增
                 { name: "雙手𢭃利是", emoji: "🙏", en: "receiving red envelopes with both hands respectfully" },
-                { name: "用藍罐曲奇盒裝利是", emoji: "🧧", en: "using a classic blue biscuit tin to collect red envelopes" },
+                { name: "食藍罐曲奇", emoji: "🍪", en: "eating Danish butter cookies from a blue tin" },
                 { name: "互相派利是拜年", emoji: "🎁", en: "exchanging red envelopes and traditional greetings" },
                 { name: "睇街頭舞獅表演", emoji: "🦁", en: "watching an energetic street lion dance performance" },
                 { name: "手持風車逛花市", emoji: "🎡", en: "holding a lucky pinwheel at the flower market" },
@@ -338,6 +398,7 @@
                 { name: "商場賀年裝飾打卡", emoji: "📸", en: "taking photos with large New Year decorations at a mall" }
             ]},
             deco: { items: [
+                { name: "香煎步步高陞年糕", emoji: "🍮", en: "a plate of pan-fried traditional sweet Nian Gao (rice cake)" }, // 新增
                 { name: "經典藍罐曲奇", emoji: "🍪", en: "a classic blue tin of Danish butter cookies" },
                 { name: "巨型嘉頓什餅", emoji: "🥫", en: "a giant red tin of Garden assorted biscuits" },
                 { name: "七彩瑞士糖", emoji: "🍬", en: "a colorful pile of Sugus chewy candies" },
@@ -352,12 +413,18 @@
         };
 
         let currentStep = 0;
-        const totalSteps = 8;
-        let selection = { style: [], clothing: [], location: [], action: [], deco: [] };
+        const totalSteps = 7;
+        let selection = { style: [], location: [], action: [], deco: [] };
         
         let selectedCharacters = [];
-        let currentEditingChar = { type: null, adjs: [] };
+        let currentEditingChar = { type: null, adjs: [], clothing: [] }; 
         let currentModalTarget = null;
+        
+        // 偏好設定狀態
+        const fsLevels = [14, 16, 18, 22, 26, 32];
+        const rateLevels = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+        let currentFontSize = 18;
+        let currentSpeechRate = 1.0;
 
         function init() {
             const progressContainer = document.getElementById('progress-container');
@@ -379,6 +446,51 @@
             document.getElementById('btn-add-char').onclick = confirmCurrentCharacter;
             updateNav();
             updateLivePreview();
+            
+            // 初始化偏好設定 UI 監聽
+            initSettingsUI();
+        }
+        
+        function initSettingsUI() {
+            const btnSettings = document.getElementById('btn-settings');
+            const settingsOverlay = document.getElementById('settings-overlay');
+            const settingsPanel = document.getElementById('settings-panel');
+            const btnCloseSettings = document.getElementById('btn-close-settings');
+            
+            const openSettings = () => {
+                settingsOverlay.classList.remove('hidden');
+                void settingsOverlay.offsetWidth;
+                settingsOverlay.classList.remove('opacity-0');
+                settingsPanel.classList.remove('translate-x-full');
+            };
+            
+            const closeSettings = () => {
+                settingsOverlay.classList.add('opacity-0');
+                settingsPanel.classList.add('translate-x-full');
+                setTimeout(() => settingsOverlay.classList.add('hidden'), 300);
+            };
+            
+            btnSettings.onclick = openSettings;
+            btnCloseSettings.onclick = closeSettings;
+            settingsOverlay.onclick = closeSettings;
+            
+            // 綁定滑桿
+            const fsSlider = document.getElementById('fs-slider');
+            const rateSlider = document.getElementById('rate-slider');
+            
+            fsSlider.oninput = (e) => {
+                currentFontSize = fsLevels[e.target.value];
+                document.getElementById('fs-display').innerText = `${currentFontSize}px`;
+                document.documentElement.style.setProperty('--fs-multiplier', currentFontSize / 16);
+            };
+            
+            rateSlider.oninput = (e) => {
+                currentSpeechRate = rateLevels[e.target.value];
+                document.getElementById('rate-display').innerText = `${currentSpeechRate}x`;
+            };
+            
+            // 初始化套用一次設定
+            document.documentElement.style.setProperty('--fs-multiplier', currentFontSize / 16);
         }
 
         function renderCard(container, cat, item, index) {
@@ -416,20 +528,20 @@
                     currentEditingChar.type = item;
                 } else {
                     selection[cat] = [item];
-                    if (cat !== 'character') {
-                        speak(item.name);
-                        updateLivePreview();
-                        setTimeout(() => goToStep(currentStep + 1), 600);
-                        return;
-                    }
+                    speak(item.name);
+                    updateLivePreview();
+                    setTimeout(() => goToStep(currentStep + 1), 600);
+                    return;
                 }
-            } else if (cat === 'adjective') {
-                const foundIdx = currentEditingChar.adjs.findIndex(a => a.name === item.name);
+            } else if (cat === 'adjective' || cat === 'clothing') {
+                const targetArray = cat === 'adjective' ? currentEditingChar.adjs : currentEditingChar.clothing;
+                const foundIdx = targetArray.findIndex(a => a.name === item.name);
+                
                 if (foundIdx > -1) {
-                    currentEditingChar.adjs.splice(foundIdx, 1);
+                    targetArray.splice(foundIdx, 1);
                     element.classList.remove('card-selected');
                 } else {
-                    currentEditingChar.adjs.push(item);
+                    targetArray.push(item);
                     element.classList.add('card-selected');
                 }
             } else {
@@ -451,13 +563,16 @@
                 speak("請先選一個角色喔！");
                 return;
             }
-            selectedCharacters.push({ ...currentEditingChar });
-            currentEditingChar = { type: null, adjs: [] };
-            document.querySelectorAll('#group-character .card-selected, #group-adjective .card-selected').forEach(el => el.classList.remove('card-selected'));
+            selectedCharacters.push({ ...currentEditingChar, adjs: [...currentEditingChar.adjs], clothing: [...currentEditingChar.clothing] });
+            
+            currentEditingChar = { type: null, adjs: [], clothing: [] };
+            
+            document.querySelectorAll('#group-character .card-selected, #group-adjective .card-selected, #group-clothing .card-selected').forEach(el => el.classList.remove('card-selected'));
+            
             updateCharacterListUI();
             updateLivePreview();
-            goToStep(2);
-            speak("已加入角色");
+            goToStep(2); 
+            speak("已完成角色設計並加入");
         }
 
         function updateLivePreview() {
@@ -466,13 +581,19 @@
             
             let parts = [];
             if (selection.style.length) parts.push({ label: '風格', val: selection.style[0].name });
+            
             let allChars = [...selectedCharacters];
             if (currentEditingChar.type) allChars.push(currentEditingChar);
+            
             if (allChars.length) {
-                const charNames = allChars.map(c => (c.adjs.map(a=>a.name).join('') + c.type.name));
+                const charNames = allChars.map(c => {
+                    const adjText = c.adjs.map(a=>a.name).join('');
+                    const clothText = c.clothing.length > 0 ? `(穿${c.clothing.map(cl=>cl.name).join('+')})` : '';
+                    return adjText + c.type.name + clothText;
+                });
                 parts.push({ label: '主角', val: charNames.join('、') });
             }
-            if (selection.clothing.length) parts.push({ label: '新衣', val: selection.clothing.map(i=>i.name).join(',') });
+            
             if (selection.location.length) parts.push({ label: '地點', val: selection.location[0].name });
             if (selection.action.length) parts.push({ label: '活動', val: selection.action[0].name });
             if (selection.deco.length) parts.push({ label: '裝飾', val: selection.deco.map(i=>i.name).join(',') });
@@ -500,7 +621,8 @@
                 const tag = document.createElement('div');
                 tag.className = "bg-red-100 text-red-700 px-4 py-2 rounded-full border-2 border-red-200 font-bold flex items-center gap-2 animate-bounce-short";
                 const adjText = char.adjs.map(a => a.name).join('');
-                tag.innerHTML = `<span>${char.type.emoji} ${adjText}${char.type.name}</span> <button onclick="removeChar(${idx})" class="hover:text-red-900 ml-1 text-xl">×</button>`;
+                const clothText = char.clothing.length > 0 ? ` 👕${char.clothing.map(c=>c.name).join('+')}` : '';
+                tag.innerHTML = `<span>${char.type.emoji} ${adjText}${char.type.name}${clothText}</span> <button onclick="removeChar(${idx})" class="hover:text-red-900 ml-1 text-xl">×</button>`;
                 display.appendChild(tag);
             });
         }
@@ -553,31 +675,35 @@
             const prevBtn = document.getElementById('btn-prev');
             const nextContainer = document.getElementById('multi-next-container');
             prevBtn.style.visibility = (currentStep === 0 || currentStep === 2) ? 'hidden' : 'visible';
-            const needsFooterNext = (currentStep === 3 || currentStep === 6);
+            const needsFooterNext = (currentStep >= 3 && currentStep <= 5);
             nextContainer.style.visibility = needsFooterNext ? 'visible' : 'hidden';
         }
 
         function generatePreviewText() {
             const display = document.getElementById('display-text');
             const s = selection;
+            
             const charList = selectedCharacters.length > 0 
                 ? selectedCharacters.map(char => {
                     const adjStr = char.adjs.map(a => a.name).join('');
-                    return adjStr + char.type.name;
+                    const clothStr = char.clothing.length > 0 ? `穿著${char.clothing.map(c => c.name).join('、')}` : "";
+                    return `${adjStr}${char.type.name}${clothStr ? `(${clothStr})` : ''}`;
                 }).join('、')
                 : "角色";
-            const clothingList = s.clothing.length ? s.clothing.map(i => i.name).join('、') : "便服";
+                
             const decoList = s.deco.length ? s.deco.map(i => i.name).join('、') : "賀年用品";
             const styleName = s.style[0]?.name || "賀年風格";
             const locName = s.location[0]?.name || "香港某處";
             const actionName = s.action[0]?.name || "過年";
 
-            display.innerHTML = `我想用 <span class="text-red-600 font-bold px-1">${styleName}</span> 畫一張圖。主角有 <span class="text-red-600 font-bold px-1">${charList}</span>，穿著 <span class="text-red-600 font-bold px-1">${clothingList}</span>。場景是在 <span class="text-red-600 font-bold px-1">${locName}</span>，他們正在 <span class="text-red-600 font-bold px-1">${actionName}</span>。周圍還有 <span class="text-red-600 font-bold px-1">${decoList}</span>。`;
+            // 使用單純的字串拼貼放入段落標籤內，避免 Flex 屬性造成的直排斷字問題
+            display.innerHTML = `我想用 <span class="text-red-600 font-bold px-1">${styleName}</span> 畫一張圖。畫面中有 <span class="text-red-600 font-bold px-1">${charList}</span>。場景是在 <span class="text-red-600 font-bold px-1">${locName}</span>，他們正在 <span class="text-red-600 font-bold px-1">${actionName}</span>。周圍還有 <span class="text-red-600 font-bold px-1">${decoList}</span>。`;
         }
 
         function speak(text) {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'zh-HK';
+            utterance.rate = currentSpeechRate; // 應用當前的說話速度
             window.speechSynthesis.cancel();
             window.speechSynthesis.speak(utterance);
         }
@@ -586,9 +712,9 @@
         document.getElementById('btn-next').onclick = () => goToStep(currentStep + 1);
         document.getElementById('btn-restart').onclick = () => window.location.reload();
 
-        document.getElementById('btn-copy').onclick = () => {
+        // 獨立出提詞產生邏輯，供複製與下載共用
+        function getPromptString() {
             const s = selection;
-            // 安全檢查：確保 style 存在，否則提供預設值
             const stylePrompt = (s.style && s.style[0]) ? s.style[0].en : "Vibrant Lunar New Year illustration";
             const locationPrompt = (s.location && s.location[0]) ? s.location[0].en : "in Hong Kong";
             const actionPrompt = (s.action && s.action[0]) ? s.action[0].en : "celebrating New Year";
@@ -596,14 +722,23 @@
             const characterPrompts = selectedCharacters.length > 0 
                 ? selectedCharacters.map(char => {
                     const adjs = char.adjs.map(a => a.en).join(', ');
-                    return adjs ? `${adjs} ${char.type.en}` : char.type.en;
+                    const clothes = char.clothing.length > 0 ? char.clothing.map(c => c.en).join(', ') : '';
+                    
+                    let desc = adjs ? `${adjs} ${char.type.en}` : char.type.en;
+                    if (clothes) {
+                        desc += ` wearing ${clothes}`;
+                    }
+                    return desc;
                 }).join(' and ')
                 : "people";
 
-            const clothingPrompts = s.clothing.length > 0 ? s.clothing.map(c => c.en).join(', ') : "casual festive clothes";
             const decoPrompts = s.deco.length > 0 ? s.deco.map(d => d.en).join(', ') : "decorations";
 
-            const prompt = `${stylePrompt}, featuring ${characterPrompts}, ${clothingPrompts}, located ${locationPrompt}, ${actionPrompt}, with ${decoPrompts}, typical Hong Kong lifestyle during Lunar New Year, 8k, vibrant festival mood --ar 16:9`;
+            return `${stylePrompt}, featuring ${characterPrompts}, located ${locationPrompt}, ${actionPrompt}, with ${decoPrompts}, typical Hong Kong lifestyle during Lunar New Year, 8k, vibrant festival mood --ar 16:9`;
+        }
+
+        document.getElementById('btn-copy').onclick = () => {
+            const prompt = getPromptString();
             
             const el = document.createElement('textarea');
             el.value = prompt;
@@ -616,6 +751,32 @@
             const btn = document.getElementById('btn-copy');
             btn.innerHTML = '<i class="fa-solid fa-check"></i> 已複製！';
             setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-copy"></i> 複製 AI 提詞 (Prompt)', 2000);
+        };
+
+        // 新增下載為 TXT 功能
+        document.getElementById('btn-download').onclick = () => {
+            const prompt = getPromptString();
+            
+            // 檔名自動抓取關鍵字 (風格 + 地點)
+            const s = selection;
+            const styleName = (s.style && s.style[0]) ? s.style[0].name.replace(/\s+/g, '') : "自訂風格";
+            const locName = (s.location && s.location[0]) ? s.location[0].name.replace(/\s+/g, '') : "地點";
+            const filename = `HCWMC_提詞_${styleName}_${locName}.txt`;
+            
+            const blob = new Blob([prompt], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            const btn = document.getElementById('btn-download');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '✅ 下載成功！';
+            setTimeout(() => btn.innerHTML = originalHTML, 2000);
         };
 
         document.getElementById('btn-listen').onclick = () => speak(document.getElementById('display-text').innerText);
