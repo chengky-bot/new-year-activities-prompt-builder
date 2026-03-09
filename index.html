@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCWMC 新年活動繪圖提詞器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fef2f2;
+            overflow-x: hidden;
+        }
+        .step-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        .step-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .option-card {
+            position: relative;
+            background: white;
+            border: 2px solid #f3f4f6;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .selected-indicator {
+            display: none;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #dc2626;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .card-selected {
+            border: 4px solid #dc2626 !important;
+            background-color: #fff1f2 !important;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(220, 38, 38, 0.2);
+        }
+
+        .card-selected .selected-indicator {
+            display: block;
+        }
+
+        .progress-dot.active {
+            background-color: #dc2626;
+            transform: scale(1.3);
+        }
+        
+        #custom-modal {
+            display: none;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+        }
+        .section-title {
+            position: relative;
+            padding-left: 1rem;
+            border-left: 4px solid #dc2626;
+        }
+
+        .animate-bounce-short {
+            animation: bounce 1s ease-in-out infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        #live-preview-bar {
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+        }
+        .preview-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 10px;
+            background: #fee2e2;
+            color: #991b1b;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-4xl w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-[6px] border-red-600 flex flex-col min-h-[750px] relative text-sm sm:text-base">
+        <!-- Header -->
+        <div class="bg-red-600 p-6 text-white text-center shadow-lg shrink-0">
+            <h1 class="text-2xl md:text-3xl font-bold tracking-wider">🧧 HCWMC 新年活動繪圖提詞器 🧨</h1>
+            <div class="flex justify-center gap-3 mt-4" id="progress-container"></div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-grow p-6 md:px-10 md:pt-10 md:pb-32 relative overflow-y-auto max-h-[550px]">
+            <div id="steps-wrapper">
+                <!-- 0. Style -->
+                <div class="step-content active" data-step="0">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">1. 選擇畫面風格</h2>
+                        <p class="text-gray-500 text-sm italic">點選風格即可自動前往下一步</p>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="group-style"></div>
+                </div>
+
+                <!-- 1. Single Character Selection -->
+                <div class="step-content" data-step="1">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">2. 設定角色組合</h2>
+                        <p class="text-gray-500 text-sm">請選擇一位角色及其特徵</p>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <h3 class="section-title text-lg font-bold text-gray-800 mb-4">角色類型 (Who) - 單選</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="group-character"></div>
+                    </div>
+
+                    <div>
+                        <h3 class="section-title text-lg font-bold text-gray-800 mb-4">外貌與特徵 (Description) - 可多選</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="group-adjective"></div>
+                    </div>
+
+                    <div class="mt-8 text-center">
+                        <button id="btn-add-char" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-10 rounded-2xl shadow-lg inline-flex items-center gap-2 transform active:scale-95 transition-all">
+                            確認此角色並繼續 <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Confirm Loop / Add More -->
+                <div class="step-content" data-step="2">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">3. 角色名單確認</h2>
+                        <p class="text-gray-500 text-sm">目前畫面中的角色有：</p>
+                    </div>
+                    
+                    <div id="character-list-display" class="flex flex-wrap justify-center gap-4 mb-10"></div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-lg mx-auto">
+                        <button onclick="goToStep(1)" class="bg-orange-50 hover:bg-orange-100 text-orange-600 border-4 border-orange-200 font-bold py-6 rounded-[2rem] flex flex-col items-center gap-2 transition-all">
+                            <span class="text-3xl">➕</span>
+                            <span>增加其他角色 / 家人</span>
+                        </button>
+                        <button onclick="goToStep(3)" class="bg-green-50 hover:bg-green-100 text-green-600 border-4 border-green-200 font-bold py-6 rounded-[2rem] flex flex-col items-center gap-2 transition-all">
+                            <span class="text-3xl">➡️</span>
+                            <span>下一步：選衣服</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Clothing -->
+                <div class="step-content" data-step="3">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">4. 換上賀年新衣</h2>
+                        <p class="text-gray-500 text-sm">角色們穿什麼？（可多選）</p>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" id="group-clothing"></div>
+                </div>
+
+                <!-- 4. Location -->
+                <div class="step-content" data-step="4">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">5. 設定場景地點</h2>
+                        <p class="text-gray-500 text-sm italic">在哪裡過年呢？</p>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="group-location"></div>
+                </div>
+
+                <!-- 5. Action -->
+                <div class="step-content" data-step="5">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">6. 港式新年活動</h2>
+                        <p class="text-gray-500 text-sm italic">大家正在忙什麼？</p>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="group-action"></div>
+                </div>
+
+                <!-- 6. Decorations -->
+                <div class="step-content" data-step="6">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-red-700 mb-2">7. 賀年裝飾與美食</h2>
+                        <p class="text-gray-500 text-sm">增加節日氣氛的小物件（多選）</p>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" id="group-deco"></div>
+                </div>
+
+                <!-- Final Preview Page -->
+                <div class="step-content" data-step="7">
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-bold text-red-700 mb-2">✨ 提詞生成完成 ✨</h2>
+                        <p class="text-gray-500">複製下方指令到 AI 繪圖工具中：</p>
+                    </div>
+                    <div class="bg-red-50 p-6 rounded-[2rem] border-4 border-red-100 mb-8 shadow-inner">
+                        <div id="display-text" class="text-lg text-gray-800 leading-relaxed italic text-center min-h-[120px] flex items-center justify-center"></div>
+                    </div>
+                    <div class="flex flex-col gap-4 max-w-sm mx-auto">
+                        <button id="btn-listen" class="bg-white hover:bg-orange-50 text-orange-600 border-2 border-orange-500 font-bold py-3 rounded-2xl transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-volume-high"></i> 聆聽廣東話描述
+                        </button>
+                        <button id="btn-copy" class="bg-red-600 hover:bg-red-700 text-white font-bold py-5 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-xl text-xl">
+                            <i class="fa-solid fa-copy"></i> 複製 AI 提詞 (Prompt)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 即時預覽展示條 -->
+        <div id="live-preview-bar" class="absolute bottom-[90px] left-0 right-0 py-3 px-6 border-y border-red-100 shadow-sm flex items-center gap-3 overflow-x-auto whitespace-nowrap z-20">
+            <span class="text-xs font-bold text-red-600 uppercase tracking-tighter shrink-0"><i class="fa-solid fa-eye"></i> 即時預覽:</span>
+            <div id="live-preview-content" class="flex gap-2 items-center">
+                <span class="text-gray-400 text-xs italic">尚未選擇任何內容...</span>
+            </div>
+        </div>
+
+        <!-- Navigation Footer -->
+        <div class="bg-gray-50 p-6 border-t-2 border-gray-100 flex justify-between items-center rounded-b-[2rem] shrink-0">
+            <button id="btn-prev" class="text-gray-400 font-bold py-2 px-6 rounded-xl hover:text-red-600 transition-colors invisible">
+                <i class="fa-solid fa-chevron-left mr-2"></i> 上一步
+            </button>
+            <div id="multi-next-container" class="invisible">
+                <button id="btn-next" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-10 rounded-2xl shadow-lg flex items-center gap-2 transform active:scale-95 transition-all">
+                    下一步 <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+            <button id="btn-restart" class="text-gray-400 font-bold py-2 px-4 rounded-xl hover:text-red-500 transition-all">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="custom-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[2rem] shadow-2xl p-8 border-4 border-red-500">
+            <h3 class="text-2xl font-bold text-red-700 mb-4">💡 自由創作</h3>
+            <p class="text-sm text-gray-500 mb-6">請輸入你想加入的內容（中文或簡單英文）：</p>
+            <input type="text" id="modal-input" class="w-full border-2 border-gray-200 rounded-2xl px-5 py-4 focus:border-red-500 outline-none mb-6 text-lg" placeholder="例如：打保齡球、穿蜘蛛俠衫...">
+            <div class="flex gap-4">
+                <button id="modal-cancel" class="flex-1 py-3 bg-gray-100 rounded-2xl font-bold text-gray-600">取消</button>
+                <button id="modal-confirm" class="flex-1 py-3 bg-red-600 text-white rounded-2xl font-bold">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const categories = {
+            style: { items: [
+                { name: "3D 黏土模型", emoji: "🧸", en: "3D claymation style, handcrafted clay texture" },
+                { name: "皮克斯動畫風", emoji: "🎬", en: "Pixar style 3D animation render, expressive" },
+                { name: "夢幻水彩插畫", emoji: "🖌️", en: "Soft watercolor illustration, ethereal atmosphere" },
+                { name: "寫實節日攝影", emoji: "📸", en: "Professional photography, cinematic lighting, 8k" },
+                { name: "精緻日漫風格", emoji: "✨", en: "High-quality anime style, vibrant festival aesthetic" },
+                { name: "溫馨手繪繪本", emoji: "📖", en: "Warm hand-drawn children's picture book style, cozy and soft" },
+                { name: "復古像素藝術", emoji: "👾", en: "Retro 8-bit pixel art style, colorful" },
+                { name: "精緻剪紙藝術", emoji: "✂️", en: "Traditional Chinese paper cutting art style, intricate" }
+            ]},
+            character: { items: [
+                { name: "小學男生", emoji: "👦", en: "Hong Kong primary school boy" },
+                { name: "小學女生", emoji: "👧", en: "Hong Kong primary school girl" },
+                { name: "親切奶奶", emoji: "👵", en: "grandmother with grey hair" },
+                { name: "和藹爺爺", emoji: "👴", en: "grandfather" },
+                { name: "香港媽咪", emoji: "👩", en: "Hong Kong mother" },
+                { name: "香港嗲哋", emoji: "👨", en: "Hong Kong father" },
+                { name: "學校老師", emoji: "👩‍🏫", en: "friendly school teacher" },
+                { name: "慈祥校長", emoji: "👨‍💼", en: "friendly school principal" },
+                { name: "財神爺", emoji: "💰", en: "God of Wealth in traditional costume" },
+                { name: "中學表哥", emoji: "🧑‍🎓", en: "teenage high school cousin" },
+                { name: "可愛柴犬", emoji: "🐕", en: "Shiba Inu" },
+                { name: "肥嘟嘟貓咪", emoji: "🐈", en: "chubby cute cat" },
+                { name: "幼稚園表弟", emoji: "🧒", en: "kindergarten toddler cousin" }
+            ]},
+            adjective: { items: [
+                { name: "戴智能手錶", emoji: "⌚", en: "wearing a kids smart watch" },
+                { name: "揹卡通斜孭袋", emoji: "👜", en: "carrying a small cartoon crossbody bag" },
+                { name: "活潑開朗", emoji: "😁", en: "cheerful" },
+                { name: "笑到見牙唔見眼", emoji: "😆", en: "smiling brightly with closed eyes" },
+                { name: "戴著黑框眼鏡", emoji: "👓", en: "wearing black-rimmed glasses" },
+                { name: "紮起雙馬尾", emoji: "👧", en: "with cute pigtails" },
+                { name: "調皮搗蛋", emoji: "🤪", en: "mischievous" },
+                { name: "肥嘟嘟", emoji: "🥟", en: "chubby and cute" },
+                { name: "缺了一隻門牙", emoji: "🦷", en: "missing a front tooth, cute smile" },
+                { name: "戴著紅色冷帽", emoji: "🧢", en: "wearing a red winter beanie" },
+                { name: "戴馬年頭飾", emoji: "🐴", en: "wearing a horse-themed Lunar New Year headband" },
+                { name: "害羞靦腆", emoji: "😳", en: "shy" }
+            ]},
+            clothing: { items: [
+                { name: "校服配紅校褸", emoji: "🧥", en: "wearing a school uniform with a festive red school jacket" },
+                { name: "學校運動服", emoji: "🏃", en: "wearing a primary school PE uniform" },
+                { name: "鮮紅連帽衛衣", emoji: "👕", en: "wearing a thick red hoodie" },
+                { name: "卡通圖案衛衣", emoji: "🧸", en: "wearing a hoodie with cute cartoon prints" },
+                { name: "中式長衫唐裝", emoji: "🥋", en: "wearing a traditional Tang suit" },
+                { name: "現代改良旗袍", emoji: "👗", en: "wearing a modern Cheongsam" },
+                { name: "紅色針織冷衫", emoji: "🧶", en: "wearing a festive red sweater" },
+                { name: "醒獅表演服", emoji: "🦁", en: "wearing a traditional lion dance costume" },
+                { name: "厚實羽絨背心", emoji: "🎽", en: "wearing a puffy down vest" }
+            ]},
+            location: { items: [
+                { name: "維園年宵花市", emoji: "🌸", en: "at Victoria Park Lunar New Year Fair, bustling market stalls" },
+                { name: "大埔林村許願樹", emoji: "🌳", en: "at Lam Tsuen Wishing Tree with red placards hanging" },
+                { name: "香火鼎盛黃大仙", emoji: "⛩️", en: "at Wong Tai Sin Temple with incense smoke" },
+                { name: "熱鬧的中式酒樓", emoji: "🥟", en: "inside a bustling traditional Chinese Dim Sum restaurant" },
+                { name: "傳統港式茶餐廳", emoji: "☕", en: "inside a retro Hong Kong Cha Chaan Teng" },
+                { name: "摩天輪海旁", emoji: "🎡", en: "at Central Waterfront with the observation wheel" },
+                { name: "校園賀年大會", emoji: "🏫", en: "at a Hong Kong primary school decorated for Lunar New Year" },
+                { name: "擺滿年花的客廳", emoji: "🏠", en: "in a living room filled with peach blossoms and orchids" },
+                { name: "屋邨長廊佈置", emoji: "🏢", en: "at a public housing estate corridor with red lanterns" },
+                { name: "尖沙咀鐘樓海旁", emoji: "🗼", en: "at Tsim Sha Tsui waterfront near the Clock Tower" }
+            ]},
+            action: { items: [
+                { name: "在玄關換紅拖鞋", emoji: "👡", en: "changing into festive red slippers at the foyer" },
+                { name: "雙手𢭃利是", emoji: "🙏", en: "receiving red envelopes with both hands respectfully" },
+                { name: "用藍罐曲奇盒裝利是", emoji: "🧧", en: "using a classic blue biscuit tin to collect red envelopes" },
+                { name: "互相派利是拜年", emoji: "🎁", en: "exchanging red envelopes and traditional greetings" },
+                { name: "睇街頭舞獅表演", emoji: "🦁", en: "watching an energetic street lion dance performance" },
+                { name: "手持風車逛花市", emoji: "🎡", en: "holding a lucky pinwheel at the flower market" },
+                { name: "開筆寫大字揮春", emoji: "🖌️", en: "writing traditional red Fai Chun calligraphy with a brush" },
+                { name: "同親戚玩大富翁", emoji: "🎲", en: "playing Monopoly board game with relatives happily" },
+                { name: "全家圍爐食盆菜", emoji: "🥘", en: "eating a Poon Choi feast with family" },
+                { name: "商場賀年裝飾打卡", emoji: "📸", en: "taking photos with large New Year decorations at a mall" }
+            ]},
+            deco: { items: [
+                { name: "經典藍罐曲奇", emoji: "🍪", en: "a classic blue tin of Danish butter cookies" },
+                { name: "巨型嘉頓什餅", emoji: "🥫", en: "a giant red tin of Garden assorted biscuits" },
+                { name: "七彩瑞士糖", emoji: "🍬", en: "a colorful pile of Sugus chewy candies" },
+                { name: "金莎朱古力塔", emoji: "🍫", en: "a pyramid of Ferrero Rocher chocolates" },
+                { name: "大發魷魚絲", emoji: "🥓", en: "a pack of traditional shredded squid snacks" },
+                { name: "一碟香煎蘿蔔糕", emoji: "🥢", en: "a plate of delicious pan-fried turnip cake" },
+                { name: "傳統醒獅頭", emoji: "🐉", en: "a colorful traditional lion dance head" },
+                { name: "大吉大利年桔", emoji: "🍊", en: "mandarin orange trees with red lucky charms" },
+                { name: "精美八角全盒", emoji: "🍱", en: "a traditional candy tray (Chuen Hup) with sugared fruits" },
+                { name: "盛開粉紅桃花", emoji: "🌸", en: "a large blooming peach blossom tree" }
+            ]}
+        };
+
+        let currentStep = 0;
+        const totalSteps = 8;
+        let selection = { style: [], clothing: [], location: [], action: [], deco: [] };
+        
+        let selectedCharacters = [];
+        let currentEditingChar = { type: null, adjs: [] };
+        let currentModalTarget = null;
+
+        function init() {
+            const progressContainer = document.getElementById('progress-container');
+            for(let i=0; i<totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = `progress-dot w-3 h-3 rounded-full bg-red-200 transition-all ${i===0?'active':''}`;
+                progressContainer.appendChild(dot);
+            }
+
+            Object.keys(categories).forEach(cat => {
+                const container = document.getElementById(`group-${cat}`);
+                if (!container) return;
+                categories[cat].items.forEach((item, index) => {
+                    renderCard(container, cat, item, index);
+                });
+                renderCustomCard(container, cat);
+            });
+
+            document.getElementById('btn-add-char').onclick = confirmCurrentCharacter;
+            updateNav();
+            updateLivePreview();
+        }
+
+        function renderCard(container, cat, item, index) {
+            const card = document.createElement('div');
+            card.className = "option-card p-4 rounded-2xl cursor-pointer hover:border-red-300 flex flex-col items-center gap-2 relative group shadow-sm h-full justify-center text-center";
+            card.innerHTML = `
+                <div class="selected-indicator">已選 <i class="fa-solid fa-check"></i></div>
+                <span class="text-3xl group-hover:scale-110 transition-transform">${item.emoji}</span>
+                <span class="text-xs font-bold text-gray-700 leading-tight">${item.name}</span>
+            `;
+            card.onclick = () => handleCardClick(cat, item, card);
+            container.appendChild(card);
+        }
+
+        function renderCustomCard(container, cat) {
+            const card = document.createElement('div');
+            card.className = "option-card bg-orange-50 border-2 border-dashed border-orange-300 p-3 rounded-2xl cursor-pointer hover:bg-orange-100 transition-all flex flex-col items-center gap-2 relative group shadow-sm h-full justify-center";
+            card.innerHTML = `
+                <div class="selected-indicator">已選 <i class="fa-solid fa-check"></i></div>
+                <span class="text-2xl group-hover:rotate-12 transition-transform">💡</span>
+                <span class="text-xs font-bold text-orange-700">自行輸入</span>
+            `;
+            card.onclick = () => openCustomModal(cat, card);
+            container.appendChild(card);
+        }
+
+        function handleCardClick(cat, item, element) {
+            const isSingleSelect = (cat === 'style' || cat === 'location' || cat === 'action' || cat === 'character');
+
+            if (isSingleSelect) {
+                Array.from(element.parentElement.children).forEach(s => s.classList.remove('card-selected'));
+                element.classList.add('card-selected');
+
+                if (cat === 'character') {
+                    currentEditingChar.type = item;
+                } else {
+                    selection[cat] = [item];
+                    if (cat !== 'character') {
+                        speak(item.name);
+                        updateLivePreview();
+                        setTimeout(() => goToStep(currentStep + 1), 600);
+                        return;
+                    }
+                }
+            } else if (cat === 'adjective') {
+                const foundIdx = currentEditingChar.adjs.findIndex(a => a.name === item.name);
+                if (foundIdx > -1) {
+                    currentEditingChar.adjs.splice(foundIdx, 1);
+                    element.classList.remove('card-selected');
+                } else {
+                    currentEditingChar.adjs.push(item);
+                    element.classList.add('card-selected');
+                }
+            } else {
+                const foundIdx = selection[cat].findIndex(s => s.name === item.name);
+                if (foundIdx > -1) {
+                    selection[cat].splice(foundIdx, 1);
+                    element.classList.remove('card-selected');
+                } else {
+                    selection[cat].push(item);
+                    element.classList.add('card-selected');
+                }
+            }
+            speak(item.name);
+            updateLivePreview();
+        }
+
+        function confirmCurrentCharacter() {
+            if (!currentEditingChar.type) {
+                speak("請先選一個角色喔！");
+                return;
+            }
+            selectedCharacters.push({ ...currentEditingChar });
+            currentEditingChar = { type: null, adjs: [] };
+            document.querySelectorAll('#group-character .card-selected, #group-adjective .card-selected').forEach(el => el.classList.remove('card-selected'));
+            updateCharacterListUI();
+            updateLivePreview();
+            goToStep(2);
+            speak("已加入角色");
+        }
+
+        function updateLivePreview() {
+            const container = document.getElementById('live-preview-content');
+            container.innerHTML = "";
+            
+            let parts = [];
+            if (selection.style.length) parts.push({ label: '風格', val: selection.style[0].name });
+            let allChars = [...selectedCharacters];
+            if (currentEditingChar.type) allChars.push(currentEditingChar);
+            if (allChars.length) {
+                const charNames = allChars.map(c => (c.adjs.map(a=>a.name).join('') + c.type.name));
+                parts.push({ label: '主角', val: charNames.join('、') });
+            }
+            if (selection.clothing.length) parts.push({ label: '新衣', val: selection.clothing.map(i=>i.name).join(',') });
+            if (selection.location.length) parts.push({ label: '地點', val: selection.location[0].name });
+            if (selection.action.length) parts.push({ label: '活動', val: selection.action[0].name });
+            if (selection.deco.length) parts.push({ label: '裝飾', val: selection.deco.map(i=>i.name).join(',') });
+
+            if (parts.length === 0) {
+                container.innerHTML = `<span class="text-gray-400 text-xs italic">尚未選擇任何內容...</span>`;
+                return;
+            }
+            parts.forEach(p => {
+                const span = document.createElement('span');
+                span.className = "preview-tag";
+                span.innerHTML = `<span class="opacity-50 text-[10px] mr-1">${p.label}:</span> ${p.val}`;
+                container.appendChild(span);
+            });
+        }
+
+        function updateCharacterListUI() {
+            const display = document.getElementById('character-list-display');
+            display.innerHTML = "";
+            if (selectedCharacters.length === 0) {
+                display.innerHTML = `<p class="text-gray-400 italic">尚未加入角色</p>`;
+                return;
+            }
+            selectedCharacters.forEach((char, idx) => {
+                const tag = document.createElement('div');
+                tag.className = "bg-red-100 text-red-700 px-4 py-2 rounded-full border-2 border-red-200 font-bold flex items-center gap-2 animate-bounce-short";
+                const adjText = char.adjs.map(a => a.name).join('');
+                tag.innerHTML = `<span>${char.type.emoji} ${adjText}${char.type.name}</span> <button onclick="removeChar(${idx})" class="hover:text-red-900 ml-1 text-xl">×</button>`;
+                display.appendChild(tag);
+            });
+        }
+
+        function removeChar(idx) {
+            selectedCharacters.splice(idx, 1);
+            updateCharacterListUI();
+            updateLivePreview();
+        }
+
+        function openCustomModal(cat, element) {
+            currentModalTarget = { cat, element };
+            document.getElementById('modal-input').value = "";
+            document.getElementById('custom-modal').style.display = 'flex';
+            document.getElementById('modal-input').focus();
+        }
+
+        document.getElementById('modal-cancel').onclick = () => {
+            document.getElementById('custom-modal').style.display = 'none';
+        };
+
+        document.getElementById('modal-confirm').onclick = () => {
+            const val = document.getElementById('modal-input').value.trim();
+            if(!val) return;
+            const { cat, element } = currentModalTarget;
+            const customItem = { name: val, emoji: "💡", en: val };
+            handleCardClick(cat, customItem, element);
+            element.querySelector('span:last-child').innerText = val;
+            document.getElementById('custom-modal').style.display = 'none';
+        };
+
+        function goToStep(step) {
+            if (step < 0 || step >= totalSteps) return;
+            if (currentStep === 2 && step === 3 && selectedCharacters.length === 0) {
+                speak("請至少加入一個角色喔！");
+                return;
+            }
+            document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.step-content[data-step="${step}"]`).classList.add('active');
+            document.querySelectorAll('.progress-dot').forEach((dot, i) => {
+                dot.className = `progress-dot w-3 h-3 rounded-full transition-all ${i <= step ? 'bg-red-600' : 'bg-red-200'} ${i === step ? 'scale-150 shadow-md' : ''}`;
+            });
+            currentStep = step;
+            updateNav();
+            document.getElementById('live-preview-bar').style.display = (step === totalSteps - 1) ? 'none' : 'flex';
+            if(step === totalSteps - 1) generatePreviewText();
+        }
+
+        function updateNav() {
+            const prevBtn = document.getElementById('btn-prev');
+            const nextContainer = document.getElementById('multi-next-container');
+            prevBtn.style.visibility = (currentStep === 0 || currentStep === 2) ? 'hidden' : 'visible';
+            const needsFooterNext = (currentStep === 3 || currentStep === 6);
+            nextContainer.style.visibility = needsFooterNext ? 'visible' : 'hidden';
+        }
+
+        function generatePreviewText() {
+            const display = document.getElementById('display-text');
+            const s = selection;
+            const charList = selectedCharacters.length > 0 
+                ? selectedCharacters.map(char => {
+                    const adjStr = char.adjs.map(a => a.name).join('');
+                    return adjStr + char.type.name;
+                }).join('、')
+                : "角色";
+            const clothingList = s.clothing.length ? s.clothing.map(i => i.name).join('、') : "便服";
+            const decoList = s.deco.length ? s.deco.map(i => i.name).join('、') : "賀年用品";
+            const styleName = s.style[0]?.name || "賀年風格";
+            const locName = s.location[0]?.name || "香港某處";
+            const actionName = s.action[0]?.name || "過年";
+
+            display.innerHTML = `我想用 <span class="text-red-600 font-bold px-1">${styleName}</span> 畫一張圖。主角有 <span class="text-red-600 font-bold px-1">${charList}</span>，穿著 <span class="text-red-600 font-bold px-1">${clothingList}</span>。場景是在 <span class="text-red-600 font-bold px-1">${locName}</span>，他們正在 <span class="text-red-600 font-bold px-1">${actionName}</span>。周圍還有 <span class="text-red-600 font-bold px-1">${decoList}</span>。`;
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-HK';
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+
+        document.getElementById('btn-prev').onclick = () => goToStep(currentStep - 1);
+        document.getElementById('btn-next').onclick = () => goToStep(currentStep + 1);
+        document.getElementById('btn-restart').onclick = () => window.location.reload();
+
+        document.getElementById('btn-copy').onclick = () => {
+            const s = selection;
+            // 安全檢查：確保 style 存在，否則提供預設值
+            const stylePrompt = (s.style && s.style[0]) ? s.style[0].en : "Vibrant Lunar New Year illustration";
+            const locationPrompt = (s.location && s.location[0]) ? s.location[0].en : "in Hong Kong";
+            const actionPrompt = (s.action && s.action[0]) ? s.action[0].en : "celebrating New Year";
+            
+            const characterPrompts = selectedCharacters.length > 0 
+                ? selectedCharacters.map(char => {
+                    const adjs = char.adjs.map(a => a.en).join(', ');
+                    return adjs ? `${adjs} ${char.type.en}` : char.type.en;
+                }).join(' and ')
+                : "people";
+
+            const clothingPrompts = s.clothing.length > 0 ? s.clothing.map(c => c.en).join(', ') : "casual festive clothes";
+            const decoPrompts = s.deco.length > 0 ? s.deco.map(d => d.en).join(', ') : "decorations";
+
+            const prompt = `${stylePrompt}, featuring ${characterPrompts}, ${clothingPrompts}, located ${locationPrompt}, ${actionPrompt}, with ${decoPrompts}, typical Hong Kong lifestyle during Lunar New Year, 8k, vibrant festival mood --ar 16:9`;
+            
+            const el = document.createElement('textarea');
+            el.value = prompt;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.8 }, colors: ['#ff0000', '#ffd700', '#ffffff'] });
+            const btn = document.getElementById('btn-copy');
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> 已複製！';
+            setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-copy"></i> 複製 AI 提詞 (Prompt)', 2000);
+        };
+
+        document.getElementById('btn-listen').onclick = () => speak(document.getElementById('display-text').innerText);
+        window.onload = init;
+    </script>
+</body>
+</html>
